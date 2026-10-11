@@ -1,0 +1,22 @@
+@if (error()) {
+  <div class="alert alert-danger py-2" role="alert">{{ error() }}</div>
+}
+
+@if (cargando()) {
+  <div class="text-center text-secondary py-3">
+    <div class="spinner-border spinner-border-sm" role="status"></div>
+  </div>
+} @else if (antecedentes().length === 0) {
+  <p class="text-secondary small mb-0">No tiene antecedentes médicos registrados.</p>
+} @else {
+  <ul class="list-group list-group-flush">
+    @for (item of antecedentes(); track item.idAntecedente) {
+      <li class="list-group-item px-0">
+        <div class="fw-medium">{{ nombreAfeccion(item.idAfeccion) }}</div>
+        @if (item.observacionDetalle) {
+          <div class="text-secondary small">{{ item.observacionDetalle }}</div>
+        }
+      </li>
+    }
+  </ul>
+}

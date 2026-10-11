@@ -1,0 +1,63 @@
+package com.ferancheta.odonto_sys.service;
+
+import com.ferancheta.odonto_sys.dto.request.CatEspecialidadRequest;
+import com.ferancheta.odonto_sys.dto.response.CatEspecialidadResponse;
+import com.ferancheta.odonto_sys.entity.CatEspecialidad;
+import com.ferancheta.odonto_sys.mapper.CatEspecialidadMapper;
+import com.ferancheta.odonto_sys.repository.CatEspecialidadRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class CatEspecialidadService {
+
+    private final CatEspecialidadRepository repository;
+    private final CatEspecialidadMapper mapper;
+
+    @Transactional(readOnly = true)
+    public List<CatEspecialidadResponse> listar() {
+        return repository.findAll().stream().map(mapper::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CatEspecialidadResponse> listarActivos() {
+        return repository.findByActivoTrue().stream().map(mapper::toResponse).toList();
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public CatEspecialidadResponse crear(CatEspecialidadRequest request) {
+        CatEspecialidad entidad = mapper.toEntity(request);
+        entidad.setActivo(true);
+        return mapper.toResponse(repository.save(entidad));
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public CatEspecialidadResponse actualizar(Integer id, CatEspecialidadRequest request) {
+        CatEspecialidad existente = obtenerEntidad(id);
+        CatEspecialidad actualizada = mapper.toEntity(request);
+        actualizada.setIdEspecialidad(existente.getIdEspecialidad());
+        actualizada.setActivo(existente.getActivo());
+        return mapper.toResponse(repository.save(actualizada));
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void eliminar(Integer id) {
+        CatEspecialidad entidad = obtenerEntidad(id);
+        entidad.setActivo(false);
+        repository.save(entidad);
+    }
+
+    private CatEspecialidad obtenerEntidad(Integer id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Especialidad no encontrada: " + id));
+    }
+}

@@ -1,0 +1,244 @@
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+  <h1 class="h3 mb-0">Dashboard financiero</h1>
+  @if (reporte()) {
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-secondary" [disabled]="descargando()" (click)="exportarExcel()">
+        <i class="bi bi-file-earmark-spreadsheet"></i>
+        Exportar Excel
+      </button>
+      <button type="button" class="btn btn-outline-secondary" (click)="exportarPdf()">
+        <i class="bi bi-file-earmark-pdf"></i>
+        Exportar PDF
+      </button>
+    </div>
+  }
+</div>
+
+@if (error()) {
+  <div class="alert alert-danger" role="alert">{{ error() }}</div>
+}
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap align-items-end gap-3">
+      <div class="btn-group">
+        <button
+          type="button"
+          class="btn btn-outline-primary"
+          [class.active]="periodo() === 'hoy'"
+          (click)="cambiarPeriodo('hoy')"
+        >
+          Hoy
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-primary"
+          [class.active]="periodo() === 'semana'"
+          (click)="cambiarPeriodo('semana')"
+        >
+          Semana
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-primary"
+          [class.active]="periodo() === 'mes'"
+          (click)="cambiarPeriodo('mes')"
+        >
+          Mes
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-primary"
+          [class.active]="periodo() === 'personalizado'"
+          (click)="cambiarPeriodo('personalizado')"
+        >
+          Personalizado
+        </button>
+      </div>
+
+      @if (periodo() === 'personalizado') {
+        <form [formGroup]="filtroPersonalizado" (ngSubmit)="aplicarPersonalizado()" class="d-flex align-items-end gap-2">
+          <div>
+            <label class="form-label">Desde</label>
+            <input type="date" class="form-control" formControlName="desde" />
+          </div>
+          <div>
+            <label class="form-label">Hasta</label>
+            <input type="date" class="form-control" formControlName="hasta" />
+          </div>
+          <button type="submit" class="btn btn-outline-primary">Aplicar</button>
+        </form>
+      }
+    </div>
+  </div>
+</div>
+
+@if (cargando()) {
+  <div class="text-center text-secondary py-5">
+    <div class="spinner-border" role="status"></div>
+  </div>
+} @else if (reporte(); as r) {
+  <div class="row g-3 mb-4">
+    <div class="col-md-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-secondary small text-uppercase">Ingresos brutos</div>
+          <div class="h4 mb-0">Q{{ r.ingresosBrutos | number: '1.2-2' }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-secondary small text-uppercase">Comisión bancaria</div>
+          <div class="h4 mb-0">Q{{ r.comisionBancaria | number: '1.2-2' }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-secondary small text-uppercase">Costo laboratorio</div>
+          <div class="h4 mb-0">Q{{ r.costoLaboratorio | number: '1.2-2' }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100 border-primary">
+        <div class="card-body">
+          <div class="text-secondary small text-uppercase">Monto neto</div>
+          <div class="h4 mb-0 text-primary">Q{{ r.montoNeto | number: '1.2-2' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <h2 class="h6 text-uppercase text-secondary mb-3">Desglose por forma de pago</h2>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="text-secondary small text-uppercase">Efectivo</div>
+          <div class="h5 mb-0">Q{{ r.cobroEfectivo | number: '1.2-2' }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-secondary small text-uppercase">Tarjeta</div>
+          <div class="h5 mb-0">Q{{ r.cobroTarjeta | number: '1.2-2' }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-secondary small text-uppercase">Transferencia</div>
+          <div class="h5 mb-0">Q{{ r.cobroTransferencia | number: '1.2-2' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-secondary small text-uppercase">Gastos fijos</div>
+          <div class="h5 mb-0">Q{{ r.gastosFijos | number: '1.2-2' }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-secondary small text-uppercase">Gastos variables</div>
+          <div class="h5 mb-0">Q{{ r.gastosVariables | number: '1.2-2' }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-secondary small text-uppercase">Comisiones a doctores</div>
+          <div class="h5 mb-0">Q{{ r.totalComisiones | number: '1.2-2' }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 h-100 border-primary">
+        <div class="card-body">
+          <div class="text-secondary small text-uppercase">Balance del período</div>
+          <div class="h5 mb-0 text-primary">Q{{ r.gananciaNeta | number: '1.2-2' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <h2 class="h6 text-uppercase text-secondary mb-3">Comisiones por doctor</h2>
+          @if (r.comisionesPorDoctor.length === 0) {
+            <p class="text-secondary small mb-0">No hay comisiones en este período.</p>
+          } @else {
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">Doctor</th>
+                    <th scope="col" class="text-end">Porcentaje</th>
+                    <th scope="col" class="text-end">Generado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of r.comisionesPorDoctor; track item.idDoctor) {
+                    <tr>
+                      <td>{{ item.nombreDoctor }}</td>
+                      <td class="text-end">{{ item.porcentaje | number: '1.2-2' }}%</td>
+                      <td class="text-end">Q{{ item.montoComision | number: '1.2-2' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h6 text-uppercase text-secondary mb-0">Cobros recientes</h2>
+            <a routerLink="/cobros" [queryParams]="{ fecha: fechaParaVerTodos() }" class="btn btn-sm btn-outline-primary">Ver todos</a>
+          </div>
+          @if (cobrosRecientes().length === 0) {
+            <p class="text-secondary small mb-0">No hay cobros en este período.</p>
+          } @else {
+            <ul class="list-group list-group-flush">
+              @for (cobro of cobrosRecientes(); track cobro.idCobro) {
+                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                  <div>
+                    <div class="fw-medium">{{ nombrePaciente(cobro.idPaciente) }}</div>
+                    <div class="text-secondary small">{{ formatoFecha(cobro.fecha) }} | {{ cobro.codigoCobro }}</div>
+                  </div>
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="text-end">
+                      <div>
+                        @if (cobro.estado === 'Anulado') {
+                          <span class="badge text-bg-secondary">Anulado</span>
+                        } @else {
+                          <span class="badge text-bg-success">Pagado</span>
+                        }
+                      </div>
+                      <div class="fw-medium">Q{{ cobro.montoBruto | number: '1.2-2' }}</div>
+                    </div>
+                    <a [routerLink]="['/cobros', cobro.idCobro]" class="btn btn-sm btn-outline-secondary">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
