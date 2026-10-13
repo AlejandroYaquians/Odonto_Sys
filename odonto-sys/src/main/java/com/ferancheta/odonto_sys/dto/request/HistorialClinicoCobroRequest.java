@@ -1,8 +1,11 @@
 package com.ferancheta.odonto_sys.dto.request;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record HistorialClinicoCobroRequest(
         Integer idCita,
@@ -16,13 +19,18 @@ public record HistorialClinicoCobroRequest(
         String descripcion,
 
         String medicamento,
+
         String dosis,
+
         String frecuencia,
+
         String duracion,
+
         String indicaciones,
 
-        @NotNull(message = "El servicio es obligatorio")
-        Integer idServicio,
+        @NotEmpty(message = "Debe agregar al menos un servicio")
+        @Valid
+        List<ServicioCobroRequest> servicios,
 
         BigDecimal costoLaboratorio,
 

@@ -1,6 +1,7 @@
 package com.ferancheta.odonto_sys.service;
 
 import com.ferancheta.odonto_sys.dto.request.CobroRequest;
+import com.ferancheta.odonto_sys.dto.request.ServicioCobroRequest;
 import com.ferancheta.odonto_sys.dto.response.CobroResponse;
 import com.ferancheta.odonto_sys.entity.CatMetodoPago;
 import com.ferancheta.odonto_sys.entity.Cita;
@@ -33,11 +34,15 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class CobroService {
+
+    public record LineaCobro(Servicio servicio, BigDecimal precio) {
+    }
 
     private static final int ESCALA = 2;
     private static final String NOMBRE_EFECTIVO = "Efectivo";
@@ -98,21 +103,29 @@ public class CobroService {
                 .orElseThrow(() -> new EntityNotFoundException("Paciente no encontrado: " + request.idPaciente()));
         Doctor doctor = doctorRepository.findById(request.idDoctor())
                 .orElseThrow(() -> new EntityNotFoundException("Doctor no encontrado: " + request.idDoctor()));
-        Servicio servicio = servicioRepository.findById(request.idServicio())
-                .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado: " + request.idServicio()));
+        List<LineaCobro> lineas = construirLineas(request.servicios());
         Cita cita = null;
         if (request.idCita() != null) {
             cita = citaRepository.findById(request.idCita())
                     .orElseThrow(() -> new EntityNotFoundException("Cita no encontrada: " + request.idCita()));
         }
 
-        return registrarCobro(paciente, cita, doctor, servicio, request.precioAplicado(),
+        return registrarCobro(paciente, cita, doctor, lineas,
                 request.costoLaboratorio(), request.montoEfectivo(), request.montoTarjeta(),
                 request.montoTransferencia(), request.idMetodoPago(), null);
     }
 
+    List<LineaCobro> construirLineas(List<ServicioCobroRequest> servicios) {
+        return servicios.stream()
+                .map(s -> new LineaCobro(
+                        servicioRepository.findById(s.idServicio())
+                                .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado: " + s.idServicio())),
+                        s.precioAplicado()))
+                .toList();
+    }
+
     @Transactional
-    CobroResponse registrarCobro(Paciente paciente, Cita cita, Doctor doctor, Servicio servicio, BigDecimal precioAplicado,
+    CobroResponse registrarCobro(Paciente paciente, Cita cita, Doctor doctor, List<LineaCobro> lineas,
                           BigDecimal costoLaboratorioRequest, BigDecimal montoEfectivoRequest,
                           BigDecimal montoTarjetaRequest, BigDecimal montoTransferenciaRequest, Integer idMetodoPagoSolicitado,
                           com.ferancheta.odonto_sys.entity.HistorialClinico historialClinico) {
@@ -154,15 +167,20 @@ public class CobroService {
         cobro.setIdUsuarioCreacion(contexto.usuarioActual().getIdUsuario());
         Cobro cobroGuardado = repository.save(cobro);
 
-        CobroDetalle detalle = new CobroDetalle();
-        detalle.setCobro(cobroGuardado);
-        detalle.setServicio(servicio);
-        detalle.setMetodoPago(metodoPago);
-        detalle.setHistorialClinico(historialClinico);
-        detalle.setPrecioAplicado(precioAplicado);
-        detalle.setCostoLaboratorio(costoLaboratorio);
-        detalle.setComisionDoctorCalculada(comisionDoctor);
-        detalleRepository.save(detalle);
+        List<CobroDetalle> detalles = new ArrayList<>();
+        for (int i = 0; i < lineas.size(); i++) {
+            LineaCobro linea = lineas.get(i);
+            boolean primera = i == 0;
+            CobroDetalle detalle = new CobroDetalle();
+            detalle.setCobro(cobroGuardado);
+            detalle.setServicio(linea.servicio());
+            detalle.setMetodoPago(metodoPago);
+            detalle.setHistorialClinico(historialClinico);
+            detalle.setPrecioAplicado(linea.precio());
+            detalle.setCostoLaboratorio(primera ? costoLaboratorio : BigDecimal.ZERO);
+            detalle.setComisionDoctorCalculada(primera ? comisionDoctor : BigDecimal.ZERO);
+            detalles.add(detalleRepository.save(detalle));
+        }
 
         Comision comision = new Comision();
         comision.setDoctor(doctor);
@@ -174,7 +192,7 @@ public class CobroService {
         comision.setUsuarioCreacion(contexto.usuarioActual());
         Comision comisionGuardada = comisionRepository.save(comision);
 
-        cobroGuardado.setDetalles(List.of(detalle));
+        cobroGuardado.setDetalles(detalles);
         cobroGuardado.setComisiones(List.of(comisionGuardada));
         CobroResponse respuesta = mapper.toResponse(cobroGuardado);
 

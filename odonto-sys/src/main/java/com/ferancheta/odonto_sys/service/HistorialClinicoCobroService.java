@@ -9,7 +9,6 @@ import com.ferancheta.odonto_sys.entity.Doctor;
 import com.ferancheta.odonto_sys.entity.HistorialClinico;
 import com.ferancheta.odonto_sys.entity.Paciente;
 import com.ferancheta.odonto_sys.entity.Receta;
-import com.ferancheta.odonto_sys.entity.Servicio;
 import com.ferancheta.odonto_sys.mapper.HistorialClinicoMapper;
 import com.ferancheta.odonto_sys.repository.EstadoCitaRepository;
 import com.ferancheta.odonto_sys.repository.CitaRepository;
@@ -17,7 +16,6 @@ import com.ferancheta.odonto_sys.repository.DoctorRepository;
 import com.ferancheta.odonto_sys.repository.HistorialClinicoRepository;
 import com.ferancheta.odonto_sys.repository.PacienteRepository;
 import com.ferancheta.odonto_sys.repository.RecetaRepository;
-import com.ferancheta.odonto_sys.repository.ServicioRepository;
 import com.ferancheta.odonto_sys.security.ContextoAutenticacion;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +35,6 @@ public class HistorialClinicoCobroService {
     private final CitaRepository citaRepository;
     private final PacienteRepository pacienteRepository;
     private final DoctorRepository doctorRepository;
-    private final ServicioRepository servicioRepository;
     private final HistorialClinicoRepository historialClinicoRepository;
     private final RecetaRepository recetaRepository;
     private final EstadoCitaRepository estadoCitaRepository;
@@ -82,10 +80,9 @@ public class HistorialClinicoCobroService {
             recetaRepository.save(receta);
         }
 
-        Servicio servicio = servicioRepository.findById(request.idServicio())
-                .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado: " + request.idServicio()));
+        List<CobroService.LineaCobro> lineas = cobroService.construirLineas(request.servicios());
 
-        CobroResponse cobro = cobroService.registrarCobro(paciente, cita, doctor, servicio, servicio.getCostoBase(),
+        CobroResponse cobro = cobroService.registrarCobro(paciente, cita, doctor, lineas,
                 request.costoLaboratorio(), request.montoEfectivo(), request.montoTarjeta(),
                 request.montoTransferencia(), request.idMetodoPago(), historialGuardado);
 

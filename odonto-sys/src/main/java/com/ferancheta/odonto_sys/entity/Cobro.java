@@ -79,6 +79,7 @@ public class Cobro extends AuditableEntity {
     private Usuario usuario;
 
     @OneToMany(mappedBy = "cobro", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OrderBy("idDetalleCobro ASC")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private List<CobroDetalle> detalles;

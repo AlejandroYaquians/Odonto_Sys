@@ -2,6 +2,7 @@ package com.ferancheta.odonto_sys.dto.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record CobroResponse(
         Integer idCobro,
@@ -22,6 +23,7 @@ public record CobroResponse(
         Integer idServicio,
         BigDecimal precioAplicado,
         Integer idDoctor,
-        BigDecimal comisionDoctor
+        BigDecimal comisionDoctor,
+        List<DetalleCobroResponse> servicios
 ) {
 }
